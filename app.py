@@ -745,6 +745,7 @@ col1, col2 = st.columns([1, 1], gap="large")
 image_map = {}
 folder_structure = {}
 zip_name = ""
+flow_text = ""
 
 with col1:
     st.markdown('<div class="step-badge">⬆ Step 01</div>', unsafe_allow_html=True)
