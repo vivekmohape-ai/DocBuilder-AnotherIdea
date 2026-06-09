@@ -819,8 +819,9 @@ with col2:
         height=260,
         placeholder="[Folder Name]\nfilename.jpg | Caption text\nfilename2.jpg | Caption text\n\n[Next Folder]\n...",
         label_visibility="collapsed",
-        key="flow_text_input"
+        value=st.session_state.get("flow_text_saved", ""),
     )
+    st.session_state["flow_text_saved"] = flow_text
 
     if flow_text.strip():
         parsed = parse_flow_text(flow_text)
@@ -846,16 +847,11 @@ with gc2:
     generate = st.button("Generate Doc", use_container_width=True)
 
 # Read from session_state so values survive the rerun triggered by the button
-flow_text = st.session_state.get("flow_text_input", "") or ""
+flow_text = st.session_state.get("flow_text_saved", "") or ""
 image_map = st.session_state.get("image_map", {})
 zip_name  = st.session_state.get("zip_name", "")
 
 if generate:
-    # Debug — remove after confirming fix
-    with st.expander("Debug info"):
-        st.write("flow_text value:", repr(flow_text))
-        st.write("zip_name:", st.session_state.get("zip_name"))
-        st.write("session keys:", list(st.session_state.keys()))
     if not st.session_state.get("zip_name") or not st.session_state.get("image_map"):
         st.error("Please upload a ZIP file first.")
     elif not flow_text.strip():
