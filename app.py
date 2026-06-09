@@ -741,11 +741,13 @@ st.markdown("""
 
 col1, col2 = st.columns([1, 1], gap="large")
 
-# ── STATE ─────────────────────────────────────────────────────────────────────
-image_map = {}
-folder_structure = {}
-zip_name = ""
-flow_text = ""
+# ── SESSION STATE ─────────────────────────────────────────────────────────────
+if "image_map" not in st.session_state:
+    st.session_state.image_map = {}
+if "folder_structure" not in st.session_state:
+    st.session_state.folder_structure = {}
+if "zip_name" not in st.session_state:
+    st.session_state.zip_name = ""
 
 with col1:
     st.markdown('<div class="step-badge">⬆ Step 01</div>', unsafe_allow_html=True)
@@ -755,12 +757,14 @@ with col1:
     zip_file = st.file_uploader("Upload ZIP", type=["zip"])
 
     if zip_file:
-        zip_name = zip_file.name
-        with st.spinner("Scanning archive..."):
-            zip_bytes = zip_file.read()
-            image_map, folder_structure = extract_images_from_zip(zip_bytes)
-        total_imgs = len(image_map)
-        total_folders = len(folder_structure)
+        if zip_file.name != st.session_state.zip_name:
+            with st.spinner("Scanning archive..."):
+                zip_bytes = zip_file.read()
+                st.session_state.image_map, st.session_state.folder_structure = extract_images_from_zip(zip_bytes)
+                st.session_state.zip_name = zip_file.name
+
+        total_imgs = len(st.session_state.image_map)
+        total_folders = len(st.session_state.folder_structure)
         st.markdown(f"""
         <div class="metric-row">
             <div class="metric-card">
@@ -773,7 +777,7 @@ with col1:
             </div>
         </div>""", unsafe_allow_html=True)
         with st.expander("View folders & files"):
-            for folder, files in sorted(folder_structure.items()):
+            for folder, files in sorted(st.session_state.folder_structure.items()):
                 st.markdown(f"<span style='color:#A0A0D0;font-size:0.8rem;font-weight:500'>📁 {folder}</span> <span style='color:var(--muted);font-size:0.72rem'>({len(files)} images)</span>", unsafe_allow_html=True)
                 for f in files[:6]:
                     st.markdown(f'<span class="preview-tag">{f}</span>', unsafe_allow_html=True)
@@ -781,8 +785,8 @@ with col1:
                     st.markdown(f"<span style='color:var(--muted);font-size:0.72rem'>+{len(files)-6} more</span>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    if zip_name:
-        zip_display = Path(zip_name).stem.replace("_", " ").replace("-", " ").upper()
+    if st.session_state.zip_name:
+        zip_display = Path(st.session_state.zip_name).stem.replace("_", " ").replace("-", " ").upper()
         month_year = datetime.now().strftime("%B %Y").upper()
         st.markdown(f"""
         <div class="cover-preview">
@@ -814,7 +818,8 @@ with col2:
         "Sequence",
         height=260,
         placeholder="[Folder Name]\nfilename.jpg | Caption text\nfilename2.jpg | Caption text\n\n[Next Folder]\n...",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="flow_text_input"
     )
 
     if flow_text.strip():
@@ -840,8 +845,13 @@ gc1, gc2, gc3 = st.columns([1.8, 1, 1.8])
 with gc2:
     generate = st.button("Generate Doc", use_container_width=True)
 
+# Read from session_state so values survive the rerun triggered by the button
+flow_text = st.session_state.get("flow_text_input", "")
+image_map = st.session_state.image_map
+zip_name  = st.session_state.zip_name
+
 if generate:
-    if not zip_file:
+    if not st.session_state.zip_name or not st.session_state.image_map:
         st.error("Please upload a ZIP file first.")
     elif not flow_text.strip():
         st.error("Please paste your image sequence.")
